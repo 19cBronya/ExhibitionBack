@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cuit.business.organization.mapper.OrganizationMapper">
+    <resultMap id="OrganizationResult" type="com.cuit.business.organization.domain.dto.OrganizationDTO">
+        <result property="id"    column="id"    />
+        <result property="uid"    column="uid"    />
+        <result property="name"    column="name"    />
+        <result property="status" column="status"/>
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createId"    column="create_id"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateId"    column="update_id"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="managerName" column="manager_name"/>
+    </resultMap>
+
+    <sql id="OrganizationList">
+        select o.id,o.uid,o.name,o.status,o.del_flag,o.create_id,o.create_time,o.update_id,o.update_time,u.name as manager_name
+        from organization o
+        left join sys_user u on u.id = o.uid
+    </sql>
+
+    <select id="selectListByPage" resultType="com.cuit.business.organization.domain.dto.OrganizationDTO">
+        <include refid="OrganizationList"/>
+        <where>
+            o.del_flag = '0' and u.del_flag = '0'
+            <if test="name != null and name != ''">
+                and o.name like concat('%',#{name},'%')
+            </if>
+            <if test="status != null and status != ''">
+                and o.status = #{status}
+            </if>
+            <if test="managerName != null and managerName != ''">
+                and u.name like concat('%',#{managerName},'%')
+            </if>
+        </where>
+    </select>
+
+    <select id="selectByUid" resultType="com.cuit.business.organization.domain.Organization">
+        <include refid="OrganizationList"/>
+        where o.del_flag = '0' and u.del_flag = '0' and o.uid = #{uid}
+    </select>
+
+
+</mapper>

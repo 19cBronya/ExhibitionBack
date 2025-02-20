@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cuit.system.sysUser.mapper.SysUserMapper">
+
+    <resultMap id="User" type="com.cuit.system.sysUser.domain.SysUser">
+        <result property="id"    column="id"    />
+        <result property="loginName"    column="login_name"    />
+        <result property="password"    column="password"    />
+        <result property="name"    column="name"    />
+        <result property="age" column="age"/>
+        <result property="sex"    column="sex"    />
+        <result property="phone"    column="phone"    />
+        <result property="email"    column="email"    />
+        <result property="status"    column="status"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+
+    <sql id="selectUser">
+        select id,name,age,sex,phone,email,status,del_flag,create_time,update_time
+        from sys_user
+        where del_flag = '0'
+    </sql>
+
+    <select id="selectByid" resultType="com.cuit.system.sysUser.domain.SysUser">
+        select id,login_name,name,age,sex,phone,email,status,del_flag,create_time,update_time
+        from sys_user
+        where del_flag = '0'
+        and id = #{uid}
+    </select>
+
+    <select id="selectByEmail" resultType="com.cuit.system.sysUser.domain.SysUser">
+        <include refid="selectUser"/>
+        and email = #{email}
+    </select>
+
+    <select id="selectOrgNameById" resultType="java.lang.String">
+        select name from organization where uid = #{id} and del_flag = '0'
+    </select>
+
+    <select id="selectOrgIdById" resultType="java.lang.Long">
+        select id from organization where uid = #{id} and del_flag = '0'
+    </select>
+
+
+</mapper>

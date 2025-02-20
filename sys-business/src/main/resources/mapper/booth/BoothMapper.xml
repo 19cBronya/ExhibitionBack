@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cuit.business.booth.mapper.BoothMapper">
+
+    <resultMap id="BoothMap" type="com.cuit.business.booth.domain.Booth">
+        <result property="id"    column="id"    />
+        <result property="eid"    column="eid"    />
+        <result property="boothCode"    column="booth_code"    />
+        <result property="price"    column="price"    />
+        <result property="soldStatus"    column="sold_status"    />
+        <result property="status" column="status"/>
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createId"    column="create_id"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateId"    column="update_id"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="BoothList">
+        select b.id,b.eid,b.booth_code,b.price,b.sold_status,b.status,b.del_flag,b.create_time
+    </sql>
+
+
+    <select id="selectListByEid" resultType="com.cuit.business.booth.domain.Booth">
+        <include refid="BoothList"/>
+        from booth b
+        where b.del_flag = '0' and b.status = '0' and b.eid = #{id}
+    </select>
+
+    <select id="selectListByEidStatus" resultType="com.cuit.business.booth.domain.Booth">
+        <include refid="BoothList"/>
+        from booth b
+        where b.del_flag = '0' and b.eid = #{id}
+    </select>
+
+
+</mapper>

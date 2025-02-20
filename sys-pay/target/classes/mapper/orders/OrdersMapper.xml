@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cuit.pay.orders.mapper.OrdersMapper">
+
+    <resultMap id="Orders" type="com.cuit.pay.orders.domain.Orders">
+        <result column="id" property="id" />
+        <result column="eid" property="eid" />
+        <result column="purchase_type" property="purchaseType" />
+        <result column="order_name" property="orderName" />
+        <result column="order_no" property="orderNo" />
+        <result column="pay_money" property="payMoney" />
+        <result column="pay_status" property="payStatus" />
+        <result column="ticket_count" property="ticketCount" />
+        <result column="start_time" property="startTime" />
+        <result column="end_time" property="endTime" />
+        <result column="pay_no" property="payNo" />
+        <result column="pay_time" property="payTime" />
+        <result column="del_flag" property="delFlag" />
+        <result property="createId"    column="create_id"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateId"    column="update_id"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <resultMap id="OrdersDTOResult" type="com.cuit.pay.orders.domain.dto.OrdersDTO">
+        <result column="id" property="id" />
+        <result column="eid" property="eid" />
+        <result column="name" property="name"/>
+        <result column="purchase_type" property="purchaseType" />
+        <result column="order_name" property="orderName" />
+        <result column="order_no" property="orderNo" />
+        <result column="pay_money" property="payMoney" />
+        <result column="pay_status" property="payStatus" />
+        <result column="ticket_count" property="ticketCount" />
+        <result column="start_time" property="startTime" />
+        <result column="end_time" property="endTime" />
+        <result column="pay_no" property="payNo" />
+        <result column="pay_time" property="payTime" />
+        <result column="del_flag" property="delFlag" />
+        <result property="createId"    column="create_id"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateId"    column="update_id"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="OrderList">
+        select o.id,o.bid,o.eid,o.purchase_type,
+               o.order_name,o.order_no,o.pay_money,o.pay_status,
+               o.ticket_count,o.start_time,o.end_time,o.pay_no,o.pay_time,o.del_flag,o.create_id,o.create_time
+        from orders o
+    </sql>
+
+    <select id="getByOrderNo" resultType="com.cuit.pay.orders.domain.Orders">
+        <include refid="OrderList"/>
+        where o.del_flag = '0' and o.order_no = #{traceNo}
+        order by o.create_time desc
+    </select>
+
+    <select id="selectListByPage" resultType="com.cuit.pay.orders.domain.dto.OrdersDTO">
+        <include refid="OrderList"/>
+        where o.del_flag = '0' and o.create_id = #{id}
+        <if test="orders.orderName != null and orders.orderName != ''"> and o.order_name like concat('%', #{orders.orderName}, '%')</if>
+        <if test="orders.orderNo != null and orders.orderNo != ''"> and o.order_no like concat('%', #{orders.orderNo}, '%')</if>
+        <if test="orders.payStatus != null and orders.payStatus != ''"> and o.pay_status = #{orders.payStatus}</if>
+        order by o.create_time desc
+    </select>
+
+    <select id="ordersPage" resultType="com.cuit.pay.orders.domain.dto.OrdersDTO">
+        <include refid="OrderList"/>
+        <where>
+            o.del_flag = '0'
+            <if test="purchaseType != null and purchaseType != ''"> and o.purchase_type = #{purchaseType}</if>
+            <if test="orderName != null and orderName != ''"> and o.order_name like concat('%', #{orderName}, '%')</if>
+            <if test="payStatus != null and payStatus != ''"> and o.pay_status = #{payStatus}</if>
+            <if test="orderNo != null and orderNo != ''"> and o.order_no like concat('%', #{orderNo}, '%')</if>
+        </where>
+        order by o.create_time desc
+    </select>
+
+    <select id="selectListByIdList" resultType="com.cuit.pay.orders.domain.dto.OrdersDTO">
+        <include refid="OrderList"/>
+        where o.del_flag = '0' and o.create_id in
+        (select e.id from exhibitor e where e.uid = #{id} and e.del_flag = '0')
+        <if test="orders.purchaseType != null and orders.purchaseType != ''"> and o.purchase_type = #{orders.purchaseType}</if>
+        <if test="orders.orderName != null and orders.orderName != ''"> and o.order_name like concat('%', #{orders.orderName}, '%')</if>
+        <if test="orders.payStatus != null and orders.payStatus != ''"> and o.pay_status = #{orders.payStatus}</if>
+        <if test="orders.orderNo != null and orders.orderNo != ''"> and o.order_no like concat('%', #{orders.orderNo}, '%')</if>
+        order by o.create_time desc
+    </select>
+
+    <update id="updateStatus" >
+        update orders set pay_status = #{payStatus},pay_time = #{gmtPayment},pay_no = #{alipayTradeNo}
+        where order_no = #{traceNo} and del_flag = '0'
+    </update>
+
+    <update id="updateReturnStatus">
+        update orders set pay_status = #{payStatus}
+        where order_no = #{traceNo} and del_flag = '0'
+    </update>
+
+    <select id="selectMonthData" resultType="com.cuit.business.exhibitionHall.domain.dto.MonthData">
+        select MONTH(create_time) AS month,
+            SUM(pay_money) AS num
+        FROM orders
+        WHERE YEAR(create_time) = YEAR(CURRENT_DATE()) and purchase_type = '0' and pay_status = '1' and del_flag = '0'
+        and eid in
+          <foreach collection="eids" item="eid" separator="," open="(" close=")">
+            #{eid}
+          </foreach>
+        GROUP BY MONTH(create_time)
+    </select>
+
+    <select id="selectPersonData" resultType="com.cuit.business.exhibitionHall.domain.dto.PersonData">
+        SELECT CASE WHEN DAYOFWEEK(create_time) = 1 THEN '周日'
+        WHEN DAYOFWEEK(create_time) = 2 THEN '周一'
+        WHEN DAYOFWEEK(create_time) = 3 THEN '周二'
+        WHEN DAYOFWEEK(create_time) = 4 THEN '周三'
+        WHEN DAYOFWEEK(create_time) = 5 THEN '周四'
+        WHEN DAYOFWEEK(create_time) = 6 THEN '周五'
+        WHEN DAYOFWEEK(create_time) = 7 THEN '周六'
+        END AS week,
+        SUM(ticket_count) AS num
+        FROM orders
+        WHERE create_time &gt;= DATE(NOW() - INTERVAL (WEEKDAY(NOW()) + 7) DAY)
+        AND create_time &lt; DATE(NOW() - INTERVAL (WEEKDAY(NOW()) - 6) DAY) and purchase_type = '0' and pay_status = '1' and del_flag = '0'
+        and eid in
+          <foreach collection="eids" item="eid" separator="," open="(" close=")">
+            #{eid}
+          </foreach>
+        GROUP BY week
+        ORDER BY MIN(create_time)
+    </select>
+
+    <select id="selectAgeData" resultType="com.cuit.business.exhibitionHall.domain.dto.AgeData">
+        SELECT
+            CASE
+                WHEN u.age >= 80 THEN '80+'
+                WHEN u.age >= 70 THEN '70+'
+                WHEN u.age >= 60 THEN '60+'
+                WHEN u.age >= 50 THEN '50+'
+                WHEN u.age >= 40 THEN '40+'
+                WHEN u.age >= 30 THEN '30+'
+                WHEN u.age >= 20 THEN '20+'
+                WHEN u.age >= 10 THEN '10+'
+                END AS age,
+            COUNT(DISTINCT o.create_id) AS num
+        FROM
+            orders o
+            LEFT JOIN sys_user u on u.id = o.create_id
+        where (u.age IS NOT NULL or u.age != '')
+            and o.purchase_type = '0' and o.pay_status = '1' and o.del_flag = '0' and u.del_flag = '0'
+            and o.eid in
+            <foreach collection="eids" item="eid" separator="," open="(" close=")">
+                #{eid}
+            </foreach>
+        GROUP BY
+            age
+        ORDER BY
+            age
+    </select>
+
+    <select id="selectListByEidList" resultMap="OrdersDTOResult">
+        select o.id,o.bid,o.eid,o.purchase_type,o.order_name,o.order_no,
+               o.pay_money,o.pay_status,o.ticket_count,o.start_time,o.end_time,o.pay_no,o.pay_time,o.del_flag,
+               o.create_id,o.create_time,
+               COALESCE(u.name, (SELECT eor.company_name FROM exhibitor eor WHERE eor.id = o.create_id)) AS name
+        from orders o
+        left join sys_user u on u.id = o.create_id
+        where o.del_flag = '0' and o.eid in
+        (select e.id from exhibition e where e.del_flag = '0' and e.status = '0' and e.create_id = #{id})
+        <if test="orders.purchaseType != null and orders.purchaseType != ''"> and o.purchase_type = #{orders.purchaseType}</if>
+        <if test="orders.orderName != null and orders.orderName != ''"> and o.order_name like concat('%', #{orders.orderName}, '%')</if>
+        <if test="orders.payStatus != null and orders.payStatus != ''"> and o.pay_status = #{orders.payStatus}</if>
+        <if test="orders.orderNo != null and orders.orderNo != ''"> and o.order_no like concat('%', #{orders.orderNo}, '%')</if>
+        order by o.create_time desc
+    </select>
+
+    <select id="selectListById" resultType="com.cuit.pay.orders.domain.dto.OrdersDTO">
+        <include refid="OrderList"/>
+        where o.del_flag = '0' and o.create_id = #{id} and o.pay_status = '1'
+        order by o.create_time desc
+    </select>
+</mapper>

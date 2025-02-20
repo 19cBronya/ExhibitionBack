@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cuit.business.comment.mapper.CommentMapper">
+
+    <resultMap id="CommentMapper" type="com.cuit.business.comment.domain.Comment">
+        <result property="id"    column="id"    />
+        <result property="replyUid" column="reply_uid"/>
+        <result property="uid" column="uid"/>
+        <result property="oid" column="oid"/>
+        <result property="star" column="star"/>
+        <result property="content" column="content"/>
+        <result property="status" column="status"/>
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createId"    column="create_id"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateId"    column="update_id"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <resultMap id="CommentDTOMapper" type="com.cuit.business.comment.domain.dto.CommentDTO">
+        <result property="id"    column="id"    />
+        <result property="eid" column="eid"/>
+        <result property="exhibitionName" column="exhibition_name"/>
+        <result property="mainId" column="main_id"/>
+        <result property="replyUid" column="reply_uid"/>
+        <result property="uid" column="uid"/>
+        <result property="name" column="name"/>
+        <result property="avatarUrl" column="avatar_url"/>
+        <result property="oid" column="oid"/>
+        <result property="orderName" column="order_name"/>
+        <result property="orderNo" column="order_no"/>
+        <result property="star" column="star"/>
+        <result property="content" column="content"/>
+        <result property="status" column="status"/>
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createId"    column="create_id"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateId"    column="update_id"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="CommentList">
+        select c.id,c.reply_uid,c.uid,c.main_id,
+               c.oid,c.star,c.content,c.status,c.del_flag,c.create_id,c.create_time,c.update_id,c.update_time
+        from comment c
+    </sql>
+
+    <sql id="CommentDTOList">
+        select c.id,o.eid,e.exhibition_name,
+               c.reply_uid,c.uid,c.main_id,u.name,u.avatar_url,
+               c.oid,o.order_name,o.order_no,
+               c.star,c.content,c.status,c.del_flag,c.create_id,c.create_time,c.update_id,c.update_time
+        from comment c
+        left join sys_user u on u.id = c.uid or c.reply_uid = u.id
+        left join orders o on o.id = c.oid
+        left join exhibition e on e.id = o.eid
+    </sql>
+
+    <select id="selectListByPage" resultType="com.cuit.business.comment.domain.dto.CommentDTO">
+        <include refid="CommentDTOList"/>
+        <where>
+            c.del_flag = '0' and c.status = '0'
+            and o.eid = #{id}
+        </where>
+        order by c.create_time desc
+    </select>
+
+    <select id="selectListByUid" resultType="com.cuit.business.comment.domain.dto.CommentDTO">
+        <include refid="CommentDTOList"/>
+        <where>
+            c.del_flag = '0' and c.status = '0'
+            and (c.uid = #{uid} or c.reply_uid = #{uid})
+        </where>
+        order by c.create_time desc
+    </select>
+
+
+    <select id="selectCommentList" resultType="com.cuit.business.comment.domain.Comment">
+        <include refid="CommentList"/>
+        where c.del_flag = '0' and c.status = '0' and c.main_id = #{id}
+        order by c.create_time desc
+    </select>
+
+    <select id="selectReplyByPage" resultType="com.cuit.business.comment.domain.dto.CommentDTO">
+        <include refid="CommentDTOList"/>
+        <where>
+            c.del_flag = '0' and c.status = '0'
+            and c.main_id = #{id} and c.reply_uid != ''
+        </where>
+        order by c.create_time desc
+    </select>
+
+
+</mapper>

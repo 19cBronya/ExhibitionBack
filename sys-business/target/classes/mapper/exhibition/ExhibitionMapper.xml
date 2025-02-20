@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cuit.business.exhibition.mapper.ExhibitionMapper">
+
+    <resultMap id="Exhibition" type="com.cuit.business.exhibition.domain.Exhibition">
+        <result property="id"    column="id"    />
+        <result property="hid"    column="hid"    />
+        <result property="exhibitionName"    column="exhibition_name"    />
+        <result property="exhibitionType"    column="exhibition_type"    />
+        <result property="ticketPrice"    column="ticket_price"    />
+        <result property="totalIncome"    column="total_income"    />
+        <result property="totalTraffic"    column="total_traffic"    />
+        <result property="totalVotes"    column="total_votes"    />
+        <result property="openingTime"    column="opening_time"    />
+        <result property="closingTime"    column="closing_time"    />
+        <result property="status" column="status"/>
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createId"    column="create_id"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateId"    column="update_id"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <resultMap id="ExhibitionDTO" type="com.cuit.business.exhibition.domain.dto.ExhibitionDTO">
+        <result property="id"    column="id"    />
+        <result property="hid"    column="hid"    />
+        <result property="organizationName"  column="organization_name"/>
+        <result property="exhibitionUrl" column="exhibition_url"/>
+        <result property="exhibitionName"    column="exhibition_name"    />
+        <result property="exhibitionType"    column="exhibition_type"    />
+        <result property="exhibitionHallName"    column="exhibition_hall_name"    />
+        <result property="exhibitionNum"    column="exhibition_num"    />
+        <result property="address"    column="address"    />
+        <result property="longitude"    column="longitude"    />
+        <result property="latitude"    column="latitude"    />
+        <result property="ticketPrice"    column="ticket_price"    />
+        <result property="totalIncome"    column="total_income"    />
+        <result property="totalTraffic"    column="total_traffic"    />
+        <result property="totalVotes"    column="total_votes"    />
+        <result property="soldTickets"    column="sold_tickets"    />
+        <result property="searchTime" column="search_time"/>
+        <result property="openingTime"    column="opening_time"    />
+        <result property="closingTime"    column="closing_time"    />
+        <result property="status" column="status"/>
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createId"    column="create_id"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateId"    column="update_id"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="ExhibitionList">
+        select e.id,e.hid,e.exhibition_url,o.name as organization_name,(select sum(ord.ticket_count)
+                                                                        from orders ord
+                                                                        where ord.eid = e.id and ord.purchase_type = '0' and ord.pay_status = '1') as sold_tickets,
+               e.exhibition_name,e.exhibition_type,e.exhibition_num,
+               ehe.name as exhibition_hall_name,ehe.address,ehe.longitude,ehe.latitude,
+               e.ticket_price,e.total_traffic,e.total_votes,e.opening_time,e.closing_time,e.del_flag,
+               e.status,e.create_id,e.create_time,e.update_id,e.update_time
+    </sql>
+
+    <select id="selectListByPage" resultType="com.cuit.business.exhibition.domain.dto.ExhibitionDTO">
+        <include refid="ExhibitionList"/>
+        from exhibition e
+        left join exhibition_hall ehe on ehe.id = e.hid
+        left join organization o on o.uid = e.create_id
+        <where>
+            e.del_flag = '0' and e.status = '0'
+            <if test="exhibitionHallName!= null and exhibitionHallName!= ''"> and ehe.name like concat('%',#{exhibitionHallName},'%')</if>
+            <if test="address!= null and address!= ''"> and ehe.address like concat('%',#{address},'%')</if>
+            <if test="hid!= null and hid!= ''"> and e.hid = #{hid}</if>
+            <if test="exhibitionName!= null and exhibitionName!= ''"> and e.exhibition_name like concat('%', #{exhibitionName}, '%')</if>
+            <if test="exhibitionType!= null and exhibitionType!= ''"> and e.exhibition_type = #{exhibitionType}</if>
+            <if test="openingTime!= null and closingTime==null">
+                and e.opening_time &lt;= #{openingTime, javaType=java.time.LocalDateTime, jdbcType=TIMESTAMP}
+            </if>
+            <if test="closingTime!= null and openingTime ==null">
+                and e.closing_time &gt;= #{closingTime, javaType=java.time.LocalDateTime, jdbcType=TIMESTAMP}
+            </if>
+            <if test="openingTime != null and closingTime != null">
+                and e.opening_time &lt;= #{openingTime, javaType=java.time.LocalDateTime, jdbcType=TIMESTAMP}
+                and e.closing_time &gt;= #{closingTime, javaType=java.time.LocalDateTime, jdbcType=TIMESTAMP}
+            </if>
+            <if test="searchTime!= null">
+                and e.opening_time &lt;= #{searchTime, javaType=java.time.LocalDate, jdbcType=TIMESTAMP}
+                and e.closing_time &gt;= #{searchTime, javaType=java.time.LocalDate, jdbcType=TIMESTAMP}
+            </if>
+            and e.closing_time > NOW()
+        </where>
+        order by e.create_time desc
+    </select>
+
+    <select id="selectExhibitionType" resultType="java.lang.String">
+        select distinct exhibition_type from exhibition
+        where del_flag = '0' and status = '0' and closing_time > NOW()
+    </select>
+
+    <select id="selectListByEid" resultType="com.cuit.business.exhibition.domain.Exhibition">
+        select * from exhibition where hid = #{id}
+    </select>
+
+    <select id="selectExhibitionListByHid" resultType="com.cuit.business.exhibition.domain.dto.ExhibitionDTO">
+        <include refid="ExhibitionList"/>
+        from exhibition e
+        left join exhibition_hall ehe on ehe.id = e.hid
+        left join organization o on o.uid = e.create_id
+        <where>
+            e.del_flag = '0' and  e.status = '0' and e.hid = #{hid} and e.closing_time > NOW()
+        </where>
+    </select>
+
+    <select id="selectExhibitionById" resultType="com.cuit.business.exhibition.domain.dto.ExhibitionDTO">
+        select DISTINCT e.id,e.hid,e.exhibition_url,o.name as organization_name,
+        (select sum(ord.ticket_count)
+            from orders ord
+            where ord.eid = #{id} and ord.purchase_type = '0' and ord.pay_status = '1') as sold_tickets,
+        e.exhibition_name,e.exhibition_type,e.exhibition_num,
+        ehe.name as exhibition_hall_name,ehe.address,e.ticket_price,e.total_traffic,e.total_votes,e.opening_time,e.closing_time,e.del_flag,
+        e.status,e.create_id,e.create_time,e.update_id,e.update_time
+        from exhibition e
+        left join exhibition_hall ehe on ehe.id = e.hid
+        left join organization o on o.uid = e.create_id
+        left join orders ord on ord.eid = e.id
+        <where>
+            e.del_flag = '0'
+            and e.id = #{id}
+        </where>
+    </select>
+
+    <select id="selectListById" resultType="com.cuit.business.exhibition.domain.dto.ExhibitionDTO">
+        <include refid="ExhibitionList"/>
+        from exhibition e
+        left join exhibition_hall ehe on ehe.id = e.hid
+        left join organization o on o.uid = e.create_id
+        <where>
+            e.del_flag = '0'
+            <if test="exhibitionDTO.status!= null and exhibitionDTO.status!= ''"> and e.status = #{exhibitionDTO.status}</if>
+            <if test="exhibitionDTO.hid!= null and exhibitionDTO.hid!= ''"> and e.hid = #{exhibitionDTO.hid}</if>
+            <if test="exhibitionDTO.exhibitionName!= null and exhibitionDTO.exhibitionName!= ''"> and e.exhibition_name like concat('%', #{exhibitionDTO.exhibitionName}, '%')</if>
+            <if test="exhibitionDTO.exhibitionType!= null and exhibitionDTO.exhibitionType!= ''"> and e.exhibition_type = #{exhibitionDTO.exhibitionType}</if>
+            <if test="exhibitionDTO.openingTime!= null and exhibitionDTO.closingTime==null">
+                and e.opening_time &lt;= #{exhibitionDTO.openingTime, javaType=java.time.LocalDateTime, jdbcType=TIMESTAMP}
+            </if>
+            <if test="exhibitionDTO.closingTime!= null and exhibitionDTO.openingTime ==null">
+                and e.closing_time &gt;= #{exhibitionDTO.closingTime, javaType=java.time.LocalDateTime, jdbcType=TIMESTAMP}
+            </if>
+            <if test="exhibitionDTO.openingTime != null and exhibitionDTO.closingTime != null">
+                and e.opening_time &lt;= #{exhibitionDTO.openingTime, javaType=java.time.LocalDateTime, jdbcType=TIMESTAMP}
+                and e.closing_time &gt;= #{exhibitionDTO.closingTime, javaType=java.time.LocalDateTime, jdbcType=TIMESTAMP}
+            </if>
+            <if test="exhibitionDTO.searchTime!= null">
+                and e.opening_time &lt;= #{exhibitionDTO.searchTime, javaType=java.time.LocalDate, jdbcType=TIMESTAMP}
+                and e.closing_time &gt;= #{exhibitionDTO.searchTime, javaType=java.time.LocalDate, jdbcType=TIMESTAMP}
+            </if>
+            and e.create_id = #{uid}
+        </where>
+        order by e.create_time desc
+    </select>
+
+    <select id="selectExhibitionListPageByHid"
+            resultType="com.cuit.business.exhibition.domain.dto.ExhibitionDTO">
+        <include refid="ExhibitionList"/>
+        from exhibition e
+        left join exhibition_hall ehe on ehe.id = e.hid
+        left join organization o on o.uid = e.create_id
+        <where>
+            e.del_flag = '0'
+            <if test="exhibitionDTO.status!= null and exhibitionDTO.status!= ''"> and e.status = #{exhibitionDTO.status}</if>
+            <if test="exhibitionDTO.hid!= null and exhibitionDTO.hid!= ''"> and e.hid = #{exhibitionDTO.hid}</if>
+            <if test="exhibitionDTO.exhibitionName!= null and exhibitionDTO.exhibitionName!= ''"> and e.exhibition_name like concat('%', #{exhibitionDTO.exhibitionName}, '%')</if>
+            <if test="exhibitionDTO.exhibitionType!= null and exhibitionDTO.exhibitionType!= ''"> and e.exhibition_type = #{exhibitionDTO.exhibitionType}</if>
+            <if test="exhibitionDTO.openingTime!= null and exhibitionDTO.closingTime==null">
+                and e.opening_time &lt;= #{exhibitionDTO.openingTime, javaType=java.time.LocalDateTime, jdbcType=TIMESTAMP}
+            </if>
+            <if test="exhibitionDTO.closingTime!= null and exhibitionDTO.openingTime ==null">
+                and e.closing_time &gt;= #{exhibitionDTO.closingTime, javaType=java.time.LocalDateTime, jdbcType=TIMESTAMP}
+            </if>
+            <if test="exhibitionDTO.openingTime != null and exhibitionDTO.closingTime != null">
+                and e.opening_time &lt;= #{exhibitionDTO.openingTime, javaType=java.time.LocalDateTime, jdbcType=TIMESTAMP}
+                and e.closing_time &gt;= #{exhibitionDTO.closingTime, javaType=java.time.LocalDateTime, jdbcType=TIMESTAMP}
+            </if>
+            <if test="exhibitionDTO.searchTime!= null">
+                and e.opening_time &lt;= #{exhibitionDTO.searchTime, javaType=java.time.LocalDate, jdbcType=TIMESTAMP}
+                and e.closing_time &gt;= #{exhibitionDTO.searchTime, javaType=java.time.LocalDate, jdbcType=TIMESTAMP}
+            </if>
+            and e.hid = #{id}
+        </where>
+        order by e.create_time desc
+    </select>
+
+    <select id="getTypeData" resultType="com.cuit.business.exhibitionHall.domain.dto.TypeData">
+        select exhibition_type as typeName,count(exhibition_type) as typeNum
+        from exhibition
+        where del_flag = '0' and status = '0' and hid in
+        <foreach collection="hids" item="hid" separator="," open="(" close=")">
+            #{hid}
+        </foreach>
+        group by exhibition_type
+        order by typeNum desc
+    </select>
+
+    <select id="selectEidByHids" resultType="java.lang.Long">
+        select e.id from exhibition e where e.del_flag = '0' and e.status = '0' and e.hid in
+        <foreach collection="hids" item="hid" separator="," open="(" close=")">
+            #{hid}
+        </foreach>
+    </select>
+
+    <select id="selectEidByUid" resultType="java.lang.Long">
+        select e.id from exhibition e where e.del_flag = '0' and e.status = '0' and e.create_id = #{id}
+    </select>
+</mapper>

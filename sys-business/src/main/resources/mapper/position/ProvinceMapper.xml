@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cuit.business.position.mapper.ProvinceMapper">
+    <resultMap id="ProvinceMap" type="com.cuit.business.position.domain.Province">
+        <result property="id"    column="id"    />
+        <result property="code"    column="code" />
+        <result property="name"    column="name" />
+        <result property="state" column="state"/>
+    </resultMap>
+    <select id="selectProcinceList" resultType="com.cuit.business.position.domain.dto.PositionDTO">
+        select id,name from province
+    </select>
+
+
+</mapper>
